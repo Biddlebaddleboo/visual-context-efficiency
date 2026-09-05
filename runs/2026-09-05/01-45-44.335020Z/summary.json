@@ -1,0 +1,17 @@
+{
+  "accuracy": 0.0,
+  "accuracy_per_100_image_tokens": 0.0,
+  "ci_high": 0.0,
+  "ci_low": 0.0,
+  "infra_failures": 8,
+  "mean_estimated_image_tokens": 0.0,
+  "mean_latency_ms": 0.0,
+  "mean_patches": 0.0,
+  "observations": 8,
+  "passed": 0,
+  "raw_results_jsonl": "runs/2026-09-05/01-45-44.335020Z/results.jsonl",
+  "report": "runs/2026-09-05/01-45-44.335020Z/REPORT.md",
+  "results_csv": "runs/2026-09-05/01-45-44.335020Z/results.csv",
+  "run_id": "rendered-corpus-20260905T014544Z-58786068",
+  "valid": 0
+}

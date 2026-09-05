@@ -1,0 +1,17 @@
+{
+  "accuracy": 0.8825,
+  "accuracy_per_100_image_tokens": 7.1551636769028075,
+  "ci_high": 0.8973700022164577,
+  "ci_low": 0.8657976994714685,
+  "infra_failures": 0,
+  "mean_estimated_image_tokens": 12.33375,
+  "mean_latency_ms": 5358.673125,
+  "mean_patches": 10.278125,
+  "observations": 1600,
+  "passed": 1412,
+  "raw_results_jsonl": "runs/2026-09-05/01-47-58.663378Z/results.jsonl",
+  "report": "runs/2026-09-05/01-47-58.663378Z/REPORT.md",
+  "results_csv": "runs/2026-09-05/01-47-58.663378Z/results.csv",
+  "run_id": "rendered-corpus-20260905T014758Z-088bf4c3",
+  "valid": 1600
+}

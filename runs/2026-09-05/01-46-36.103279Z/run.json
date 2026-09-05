@@ -1,0 +1,17 @@
+{
+  "codex_version": "codex-cli 0.152.1",
+  "concurrency": 2,
+  "corpus_observations": 8,
+  "created_or_resumed_at": "2026-09-05T01:46:36.201595+00:00",
+  "dry_run": false,
+  "infra_retries": 1,
+  "manifest": "rendered/all-instructions/manifest.jsonl",
+  "manifest_sha256": "e798b9ee5d3bf74ca862ca2d2f260ab05edcce4580a2f5115854f9ad6090d68c",
+  "model": "gpt-5.6-luna",
+  "prompt_template": "Follow the instructions in the attached image.\n\nTask payload:\n{payload}",
+  "prompt_template_sha256": "80ceb0389039e724bd4d977e420fd33d37548ce05134cc02b27f00035205ebdb",
+  "run_id": "rendered-corpus-20260905T014636Z-c0751719",
+  "tasks": "dataset/tasks.jsonl",
+  "tasks_sha256": "5dc3f006434ff33a9057dc3c3ed303ee3fbfd5ea9a24ccc1bedca7c3beb38d55",
+  "timeout_seconds": 180
+}
