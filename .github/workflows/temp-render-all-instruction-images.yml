@@ -24,7 +24,7 @@ on:
       - "pyproject.toml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   render:
@@ -34,6 +34,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -79,6 +81,18 @@ jobs:
           if len(pngs) != expected or len(manifest) != expected:
               raise SystemExit("render count mismatch")
           PY
+
+      - name: Commit rendered images to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f rendered/all-instructions
+          if git diff --cached --quiet; then
+            echo "No rendered image changes to commit."
+          else
+            git commit -m "data: commit rendered instruction image matrix"
+            git push origin HEAD:main
+          fi
 
       - name: Upload rendered image matrix
         uses: actions/upload-artifact@v4
