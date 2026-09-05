@@ -199,6 +199,67 @@ One observation per task×font is exploratory rather than repeated confirmation.
 
 Repeat selected task×font conditions across independent fresh sessions and run a separately versioned paired text baseline before making claims about visual-versus-text degradation, equivalence, or savings.
 
+### EXP-004 — Paired Reading-200 text baseline and Fira Sans size sweep
+
+**Date:** 2026-09-05
+**Status:** Completed
+**Relevant commit:** `752a0fd6a47c1392e750112de11fa7a0cc4b8355`
+**Run/config IDs:** smoke `runs/2026-09-05/16-26-48.799642Z`; full `runs/2026-09-05/16-28-30.490211Z`
+
+#### Question / uncertainty
+
+How does image-only reading accuracy change from 8px to 12px Fira Sans relative to a plain-text baseline on the exact same 200 synthetic reading tasks? The prior 8px multi-font benchmark had no paired text baseline, so it could not quantify the accuracy gap or determine whether larger renders approach text performance.
+
+#### Hypothesis
+
+Increasing Fira Sans from 8px to 12px will improve image accuracy and recover some tasks that fail at 8px; the text baseline will remain the strongest condition. Cause and location questions are expected to be especially fragile at small sizes.
+
+#### Independent variables
+
+- Input condition: original passage as text or passage supplied only through the committed Fira Sans PNG.
+- Image raster size: 8px, 9px, 10px, 11px, or 12px.
+- Reading task and category.
+
+#### Controlled variables
+
+- Exact dataset SHA-256 `987988ff39e3ed843ec1b6bb0b6287415c4cbfea83edf6ca4c60a7a25b6f1aef` and committed PNG bytes at `752a0fd6`.
+- GPT-5.6 Luna only, deterministic normalized-scalar scorer, one fresh `codex exec --ephemeral` child per observation, and no valid-response retries.
+- Same question payload, concurrency 4, timeout 180 seconds, and infrastructure retry limit 1.
+
+#### Dataset / sample
+
+- 200 tasks; 1,000 image observations (Fira Sans × five sizes) plus 200 text-baseline observations.
+- One observation per task×condition; smoke observations are excluded from headline results.
+- Include every committed image with a valid SHA-256 and every text task; exclude only final infrastructure failures from accuracy denominators while retaining them in raw evidence.
+
+#### Method
+
+Validate all 1,000 committed PNGs and the unchanged dataset before paid execution. Run a small paired smoke test, then the complete 1,200-observation run with the existing fresh-child mechanism. The image prompt is the fixed image-only wrapper plus question; the text prompt contains the original passage and the same question without the expected answer. Report Wilson intervals, latency, observed text input tokens when available, category and task recovery, and image accuracy/token Pareto results.
+
+#### Results
+
+The preflight verified the unchanged dataset SHA-256 `987988ff39e3ed843ec1b6bb0b6287415c4cbfea83edf6ca4c60a7a25b6f1aef`, 200 tasks, 1,000 Fira Sans PNGs, 200 images at each size from 8px through 12px, unique observation IDs, and all 1,000 image hashes. The paired smoke test completed 6/6 observations (one task at all five sizes plus text), with six unique child threads, exact prompt/attachment checks, and no infrastructure failures.
+
+The full run completed exactly 1,200 observations: 200 text and 1,000 image. The plain-text baseline passed 125/200 = 62.50% (Wilson 95% CI 55.61%–68.91%) with mean recorded Codex input tokens 13,302.80 (range 13,006–14,339). Image accuracy was 8px 102/200 = 51.00% (44.12%–57.84%), 9px 110/200 = 55.00% (48.08%–61.74%), 10px 114/200 = 57.00% (50.07%–63.67%), 11px 104/200 = 52.00% (45.10%–58.82%), and 12px 104/200 = 52.00% (45.10%–58.82%). Mean estimated image tokens were 42.37, 47.66, 60.87, 66.80, and 82.58 respectively; the accuracy gaps versus text were -11.50, -7.50, -5.50, -10.50, and -10.50 percentage points. The 10px condition was closest to the text baseline.
+
+The image accuracy/token Pareto frontier was 8px, 9px, and 10px; 11px and 12px were dominated by lower-token conditions. Task recovery from 8px to 12px had 19 recovered tasks, 17 regressions, 85 stable passes, and 79 stable failures. Cause accuracy remained 0.00% at every size and in text; location accuracy was 5.00% at 8px, 2.50% at 9px and 10px, and 5.00% at 11px and 12px, versus 12.50% for text. Date/fact/quantity categories peaked at 10px but did not monotonically improve through 12px. Full category tables, all task transitions, latency, tokens, and raw evidence are in `REPORT.md`.
+
+#### Infrastructure failures / exclusions
+
+There were 0 final infrastructure failures, 0 infrastructure-retry rows, and no excluded observations. All 1,200 final rows used `gpt-5.6-luna`, unique fresh child threads, and one attempt; valid wrong answers were not retried. The paired coordinator and report were added as the necessary harness extension because the existing rendered-corpus runner handled only image manifests and could not represent the paired text condition. A smoke-only report category assumption and resume run-ID bookkeeping issue were corrected without rerunning scored rows.
+
+#### Interpretation
+
+The 10px Fira Sans image condition was the closest to the plain-text baseline but remained 5.50 percentage points lower; its Wilson interval overlaps the baseline interval, but this single observation per task/condition is not an equivalence test. Increasing size above 10px did not improve accuracy and increased estimated image-token cost, so the observed frontier favors 8–10px for this corpus. Persistent cause/location weakness appears task- or dataset-specific rather than resolved by larger raster text. No text/image equivalence or savings claim is made.
+
+#### Limitations
+
+One observation per task×condition is exploratory rather than repeated confirmation. Codex-reported text input tokens include the model's recorded input accounting and may include wrapper/system overhead; estimated image tokens are renderer estimates.
+
+#### Next hypothesis / experiment
+
+Repeat selected task×size conditions across independent fresh sessions and investigate the cause/location task construction before changing the dataset or scoring. A future text/image comparison should predeclare an equivalence margin if equivalence is the intended claim.
+
 ### EXP-XXX — Title
 
 **Date:** YYYY-MM-DD  

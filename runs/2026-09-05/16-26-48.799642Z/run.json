@@ -1,0 +1,22 @@
+{
+  "codex_version": "codex-cli 0.153.4",
+  "concurrency": 4,
+  "corpus_observations": 6,
+  "created_or_resumed_at": "2026-09-05T16:27:29.175118+00:00",
+  "dataset_sha256": "987988ff39e3ed843ec1b6bb0b6287415c4cbfea83edf6ca4c60a7a25b6f1aef",
+  "image_observations": 5,
+  "image_prompt_template": "Read the passage in the attached image and answer the question below. Return only the answer, with no explanation.\n\nQuestion:\n{payload}",
+  "image_prompt_template_sha256": "d48ec730df5530e32f1eb5b52f259af4935db4e3c42c00ff395c2b17239c9af1",
+  "infra_retries": 1,
+  "manifest": "rendered/reading-200/manifest.jsonl",
+  "manifest_sha256": "60e10f54d4634514662be6b32f80c04d7f18e43fa535e3dee9cbe4e82e893a3e",
+  "model": "gpt-5.6-luna",
+  "run_id": "reading-200-paired-20260905T162648Z-289fb302",
+  "smoke_limit": 1,
+  "task_count": 1,
+  "tasks": "dataset/reading_200.jsonl",
+  "text_observations": 1,
+  "text_prompt_template": "Read the passage below and answer the question. Return only the answer, with no explanation.\n\nPassage:\n{instruction}\n\nQuestion:\n{payload}",
+  "text_prompt_template_sha256": "e10f1a2c76f67fc830c4c4e088c7a6c392f70cb7f3f57744b02ddd8cbd85a5e5",
+  "timeout_seconds": 180
+}
