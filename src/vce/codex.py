@@ -99,9 +99,12 @@ def run_fresh(
             "-C",
             str(tmp_path),
         ]
+        # Codex CLI's --image option accepts one or more file arguments and
+        # otherwise consumes the trailing prompt as another image path.
+        # Put the prompt first so the image attachment cannot swallow it.
+        command.append(prompt)
         if image is not None:
             command.extend(["--image", str(image.resolve())])
-        command.append(prompt)
 
         started = time.monotonic()
         try:
