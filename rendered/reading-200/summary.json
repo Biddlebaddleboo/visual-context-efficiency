@@ -1,26 +1,41 @@
 {
-  "candidate_fonts": [
-    "fira-sans",
-    "atkinson-hyperlegible",
-    "ibm-plex-sans",
-    "source-sans-3",
-    "inter",
-    "noto-sans"
+  "by_size": {
+    "10": {
+      "images": 200,
+      "mean_estimated_image_tokens": 60.87,
+      "mean_patches": 50.725
+    },
+    "11": {
+      "images": 200,
+      "mean_estimated_image_tokens": 66.804,
+      "mean_patches": 55.67
+    },
+    "12": {
+      "images": 200,
+      "mean_estimated_image_tokens": 82.57799999999999,
+      "mean_patches": 68.815
+    },
+    "8": {
+      "images": 200,
+      "mean_estimated_image_tokens": 42.36599999999999,
+      "mean_patches": 35.305
+    },
+    "9": {
+      "images": 200,
+      "mean_estimated_image_tokens": 47.663999999999994,
+      "mean_patches": 39.72
+    }
+  },
+  "font": "fira-sans",
+  "font_sizes_px": [
+    8,
+    9,
+    10,
+    11,
+    12
   ],
-  "control_font": "jetbrains-mono",
-  "font_size_px": 8,
-  "fonts": [
-    "fira-sans",
-    "atkinson-hyperlegible",
-    "ibm-plex-sans",
-    "source-sans-3",
-    "inter",
-    "noto-sans",
-    "jetbrains-mono"
-  ],
-  "images": 1400,
-  "mean_estimated_image_tokens": 39.94714285714286,
-  "mean_patches": 33.28928571428571,
-  "schema_version": 1,
+  "images": 1000,
+  "patch_token_multiplier": 1.2,
+  "schema_version": 2,
   "tasks": 200
 }
