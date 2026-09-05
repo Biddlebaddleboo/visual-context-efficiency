@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "fonts": [
+    {
+      "id": "jetbrains-mono",
+      "family": "JetBrains Mono",
+      "filename": "JetBrainsMono-Regular.ttf",
+      "license": "OFL-1.1",
+      "source": "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/ttf/JetBrainsMono-Regular.ttf"
+    },
+    {
+      "id": "atkinson-hyperlegible",
+      "family": "Atkinson Hyperlegible",
+      "filename": "AtkinsonHyperlegible-Regular.ttf",
+      "license": "OFL-1.1",
+      "source": "https://raw.githubusercontent.com/googlefonts/atkinson-hyperlegible/main/fonts/ttf/AtkinsonHyperlegible-Regular.ttf"
+    },
+    {
+      "id": "source-sans-3",
+      "family": "Source Sans 3",
+      "filename": "SourceSans3-Regular.ttf",
+      "license": "OFL-1.1",
+      "source": "https://raw.githubusercontent.com/adobe-fonts/source-sans/release/TTF/SourceSans3-Regular.ttf"
+    },
+    {
+      "id": "ibm-plex-sans",
+      "family": "IBM Plex Sans",
+      "filename": "IBMPlexSans-Regular.ttf",
+      "license": "OFL-1.1",
+      "source": "https://raw.githubusercontent.com/IBM/plex/master/packages/plex-sans/fonts/complete/ttf/IBMPlexSans-Regular.ttf"
+    },
+    {
+      "id": "fira-sans",
+      "family": "Fira Sans",
+      "filename": "FiraSans-Regular.ttf",
+      "license": "OFL-1.1",
+      "source": "https://raw.githubusercontent.com/mozilla/Fira/master/ttf/FiraSans-Regular.ttf"
+    }
+  ]
+}

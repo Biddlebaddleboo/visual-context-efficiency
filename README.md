@@ -2,161 +2,166 @@
 
 A public benchmark for measuring how efficiently **GPT-5.6 Luna** can understand and follow natural-language instructions when those instructions are rendered as images instead of supplied as text.
 
-The project focuses on **semantic comprehension and instruction following**, not only character-perfect OCR. Natural-language context can recover from some glyph ambiguity that would make code, hashes, identifiers, or paths incorrect. The benchmark therefore asks a practical engineering question: how much visual compression can be applied before meaning or compliance degrades?
-
-## Core research question
+The project focuses on **semantic comprehension and instruction following**, not only character-perfect OCR. The practical question is:
 
 > How much can natural-language instructions be visually compressed before GPT-5.6 Luna's ability to understand and follow them degrades materially relative to the same instructions supplied as text?
 
-The initial benchmark varies:
+The optimization target is the **quality/token Pareto frontier**: configurations for which no lower-token visual representation achieves equal or better instruction-following quality.
 
-- font family;
-- raster font size;
-- line spacing;
-- margins;
-- image width and aspect ratio;
-- wrapping and layout;
-- 32×32 patch count; and
-- instruction length and semantic complexity.
+## Scope
 
-The optimization target is the **quality/token Pareto frontier**: configurations for which no lower-token configuration achieves equal or better instruction-following quality.
+The initial benchmark is intentionally **GPT-5.6 Luna only**. It varies font family, raster size, line spacing, margins, wrapping/layout, aspect ratio, instruction length, semantic complexity, and 32×32 patch count.
 
-## Model scope
-
-The initial research is intentionally limited to **GPT-5.6 Luna**. This is not a cross-model leaderboard. Restricting the model lets the experimental budget go toward typography, layout, task diversity, repetitions, and careful boundary testing.
+The repository does not treat exact OCR as the headline metric. Exact identifiers and confusable characters are retained as a smaller control subset because natural-language instructions can often remain semantically recoverable after character-perfect OCR starts to degrade.
 
 ## Lab architecture
 
-A persistent **parent Codex session acts as the research coordinator**. It may formulate hypotheses, launch experiment batches, inspect aggregate results, investigate anomalies, and decide what to test next.
-
-Every **scored observation** must be produced by a **fresh child Codex session** with no prior benchmark history.
+A persistent **parent Codex session acts as the research coordinator**. Every scored observation is produced by a **fresh child Codex CLI session**. The parent may design experiments and analyze results, but it must never directly answer scored benchmark items.
 
 ```text
-Parent Codex research coordinator
+Parent Codex coordinator
         |
         v
 Python benchmark harness
-  |     |     |     |
-  v     v     v     v
-fresh  fresh  fresh  fresh
-child  child  child  child
-Codex  Codex  Codex  Codex
-  |     |     |     |
-  +-----+-----+-----+
+        |
+        +--> fresh Codex child -> one scored observation
+        +--> fresh Codex child -> one scored observation
+        +--> fresh Codex child -> one scored observation
         |
         v
-raw responses + deterministic scoring
-        |
-        v
-aggregate results
-        |
-        v
-Parent Codex reviews results and defines next experiment
+raw JSONL + deterministic scoring + aggregate reports
 ```
 
-The parent coordinator must **never directly answer a scored benchmark item**.
+The harness uses fresh `codex exec --ephemeral` invocations and does not use `resume` for scored trials.
 
-## Experimental conditions
+## Quick start
 
-Each task has an authoritative source instruction and, where practical, a machine-checkable expected result.
+Requirements:
+
+- Python 3.11+
+- Codex CLI installed and authenticated
+- network access once to fetch the open-source benchmark fonts
+
+Set up Python and fonts:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev]'
+python scripts/fetch_fonts.py
+python scripts/verify_environment.py
+```
+
+On Windows PowerShell, activate the virtual environment with `.venv\Scripts\Activate.ps1`.
+
+Run the unit tests:
+
+```bash
+pytest
+```
+
+Render a few instruction images without calling Codex:
+
+```bash
+vce-render --font jetbrains-mono --size 14 --line-gap 1 --margin 1 --limit 4
+```
+
+Dry-run the paired benchmark path:
+
+```bash
+vce-run --font jetbrains-mono --size 14 --line-gap 1 --margin 1 --limit 4 --dry-run
+```
+
+Run a small real paired benchmark:
+
+```bash
+vce-run --font jetbrains-mono --size 14 --line-gap 1 --margin 1 --limit 4
+```
+
+Run a version-controlled matrix:
+
+```bash
+python scripts/run_matrix.py configs/smoke.json --dry-run
+python scripts/run_matrix.py configs/smoke.json
+```
+
+The broader first-pass matrix is in `configs/screening.json`.
+
+## Fonts
+
+The initial font set is deliberately open-source:
+
+- JetBrains Mono
+- Atkinson Hyperlegible
+- Source Sans 3
+- IBM Plex Sans
+- Fira Sans
+
+Font binaries are downloaded by `scripts/fetch_fonts.py` rather than committed. The script writes `fonts/installed.json` containing the exact SHA-256 of every downloaded font. Each scored image observation records the font hash again, so published results can identify the exact font bytes used.
+
+## Paired conditions
 
 ### Text baseline
 
-A fresh child Codex session receives the original instruction as text plus the task payload.
+A fresh child receives the authoritative instruction as text plus the task payload.
 
 ### Image condition
 
-A separate fresh child session receives a neutral wrapper such as:
+A different fresh child receives only a neutral wrapper such as `Follow the instructions in the attached image.`, the rendered instruction image, and the same task payload. The authoritative instruction is **not duplicated as text**.
 
-> Follow the instructions in the image.
+## Rendering
 
-followed by the rendered instruction image and the same task payload.
+The renderer is deterministic for a given source instruction and configuration. It records:
 
-The source instruction must **not** also be supplied as text in the image condition. It is retained only for rendering, hashing, scoring, and reproducibility.
+- font ID and SHA-256;
+- raster font size;
+- line gap and margin;
+- rendered dimensions;
+- line count and line-box height;
+- image SHA-256;
+- 32×32 patch grid;
+- total patch count; and
+- estimated image tokens using the configured patch multiplier.
 
-## Primary metrics
+The default renderer searches widths and chooses the lowest-patch layout subject to a practical aspect-ratio constraint. Aspect ratio is itself configurable for later experiments.
 
-The benchmark reports multiple dimensions rather than collapsing everything into OCR accuracy:
+## Benchmark data
 
-- task correctness;
-- instruction compliance;
-- negation accuracy;
-- conditional-rule accuracy;
-- structured-output compliance;
-- hallucination / unsupported-value rate;
-- exact-string accuracy for a smaller OCR-control subset;
-- text-baseline-normalized accuracy;
-- patch count and reported image input tokens; and
-- semantic accuracy per input token.
+`dataset/tasks.jsonl` contains a small seed dataset for harness validation. It covers semantic selection, negation, conditional rules, multi-step instructions, JSON output, null behavior, date comparison, formatting, reference resolution, and an exact-character OCR control.
 
-A useful normalized metric is:
+The planned validation set is substantially larger; see [`BENCHMARK_TASKS.md`](BENCHMARK_TASKS.md).
+
+## Results
+
+Each `vce-run` invocation creates an immutable-style run directory under `runs/<run-id>/` containing:
 
 ```text
-visual_normalized_score = image_condition_score / text_baseline_score
+config.json
+images/             # for image conditions
+results.jsonl       # raw observation records + scores
 ```
 
-## Initial typography sweep
+Infrastructure failures are separated from model failures. Valid model responses are never silently retried just because they score poorly.
 
-Suggested initial font families:
+Summarize a run with:
 
-- JetBrains Mono;
-- Arial or Liberation Sans;
-- Verdana;
-- DejaVu Sans;
-- Noto Sans;
-- Atkinson Hyperlegible; and
-- one readable serif control such as Georgia or Liberation Serif.
-
-Suggested initial raster sizes:
-
-- 8 px;
-- 9 px;
-- 10 px;
-- 11 px;
-- 12 px;
-- 13 px;
-- 14 px; and
-- 16 px.
-
-Initial rendering should otherwise stay deliberately simple and controlled: black text, white background, PNG, deterministic word wrapping, minimal margins, and a fixed line-gap policy.
-
-## Staged study
-
-1. **Harness validation** — prove clean-session isolation, image transport, response capture, scoring, and metadata collection.
-2. **Typography screening** — approximately 30–40 representative tasks across the broad font/size grid.
-3. **Focused validation** — approximately 150–200 tasks on the best 5–8 configurations, with repeated independent runs.
-4. **Layout optimization** — line spacing, aspect ratio, margins, weight, and wrapping/layout strategies.
-5. **Boundary confirmation** — dense testing near the smallest high-quality configuration to locate the practical failure cliff and confidence interval.
+```bash
+vce-report runs/<run-id>/results.jsonl
+```
 
 ## Repository documents
 
-- [`AGENTS.md`](AGENTS.md) — operating rules for the parent Codex coordinator.
+- [`AGENTS.md`](AGENTS.md) — rules for the parent Codex research coordinator.
 - [`METHODOLOGY.md`](METHODOLOGY.md) — controls, metrics, scoring, statistics, and reproducibility.
 - [`EXPERIMENT_PLAN.md`](EXPERIMENT_PLAN.md) — staged execution plan.
 - [`BENCHMARK_TASKS.md`](BENCHMARK_TASKS.md) — task taxonomy and dataset requirements.
-- [`RESEARCH_LOG.md`](RESEARCH_LOG.md) — contemporaneous research notebook template and first hypotheses.
+- [`RESEARCH_LOG.md`](RESEARCH_LOG.md) — contemporaneous research notebook.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution and reproducibility expectations.
-
-Expected implementation directories later:
-
-```text
-benchmark/       Python orchestration, scoring, and Codex CLI integration
-renderer/        deterministic instruction-image rendering
-configs/         version-controlled experiment configurations
-dataset/         synthetic benchmark tasks and schemas
-runs/            raw run metadata and outputs
-results/         aggregate tables and reports
-experiments/     immutable experiment records
-```
-
-## Reproducibility
-
-Every scored observation should be traceable to a task ID, dataset revision, source-instruction hash, condition, model identifier, fresh-session invocation, Codex CLI version where available, rendering parameters, output image hash, patch count, raw response, expected result, scoring rule, score breakdown, latency, process exit status, and retry metadata.
 
 ## Public-repo boundary
 
-The benchmark methodology, synthetic datasets, renderer, harness, and aggregate results are intended to be public. Do not commit proprietary production prompts, credentials, customer information, private datasets, or unreleased business logic.
+Use synthetic or clearly redistributable benchmark content. Do not commit API keys, customer data, proprietary production prompts, private datasets, or unreleased business logic.
 
 ## Status
 
-Planning and experimental-design phase. The benchmark harness and dataset are not yet implemented, and no empirical result should be described as established until it has been produced by a versioned experiment under this repository's methodology.
+The initial Python harness, deterministic renderer, font fetcher, fresh Codex CLI child runner, seed dataset, scorers, matrix driver, and report utility are implemented. The current seed tasks are for harness validation, not a final empirical benchmark result.

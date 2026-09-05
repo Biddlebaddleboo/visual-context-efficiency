@@ -1,0 +1,10 @@
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+runs/
+results/
+rendered/
+fonts/files/
+fonts/installed.json
+.DS_Store

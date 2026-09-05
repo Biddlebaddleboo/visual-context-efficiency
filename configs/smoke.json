@@ -1,0 +1,12 @@
+{
+  "name": "smoke",
+  "fonts": ["jetbrains-mono", "source-sans-3"],
+  "sizes": [12, 14],
+  "line_gaps": [1],
+  "margin": 1,
+  "max_aspect": 2.0,
+  "patch_multiplier": 1.2,
+  "condition": "both",
+  "repetitions": 1,
+  "limit": 4
+}

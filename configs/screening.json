@@ -1,0 +1,18 @@
+{
+  "name": "initial-screening",
+  "fonts": [
+    "jetbrains-mono",
+    "atkinson-hyperlegible",
+    "source-sans-3",
+    "ibm-plex-sans",
+    "fira-sans"
+  ],
+  "sizes": [9, 10, 11, 12, 13, 14, 16],
+  "line_gaps": [1],
+  "margin": 1,
+  "max_aspect": 2.0,
+  "patch_multiplier": 1.2,
+  "condition": "both",
+  "repetitions": 1,
+  "limit": 40
+}

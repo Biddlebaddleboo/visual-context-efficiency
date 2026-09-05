@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "visual-context-efficiency"
+version = "0.1.0"
+description = "Benchmark visual natural-language instruction efficiency with GPT-5.6 Luna via Codex CLI."
+requires-python = ">=3.11"
+dependencies = [
+  "Pillow>=11.0,<13",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0,<10"]
+
+[project.scripts]
+vce-render = "vce.render_cli:main"
+vce-run = "vce.run_cli:main"
+vce-report = "vce.report_cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
