@@ -112,7 +112,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add -A rendered
+          # Stage deletions/changes to any previously tracked renders without
+          # asking Git to add newly generated ignored files yet.
+          git add -u -- rendered
+          # rendered/ is intentionally ignored, so force-add the new corpus.
           git add -f rendered/reading-200
           git add dataset/reading_200.jsonl dataset/reading_200.metadata.json
 
