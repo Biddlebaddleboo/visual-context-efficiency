@@ -1,23 +1,21 @@
-name: TEMP generate reading corpus and commit renders
+name: TEMP render Fira Sans reading size sweep
 
 on:
   workflow_dispatch:
   push:
     paths:
       - ".github/workflows/temp-generate-reading-corpus.yml"
-      - "scripts/generate_reading_dataset.py"
-      - "scripts/validate_reading_dataset.py"
-      - "scripts/render_reading_matrix.py"
       - "scripts/fetch_fonts.py"
       - "fonts/manifest.json"
       - "src/vce/render.py"
       - "src/vce/fonts.py"
+      - "src/vce/dataset.py"
 
 permissions:
   contents: write
 
 jobs:
-  generate-and-render:
+  render-size-sweep:
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -38,24 +36,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e '.[dev]'
 
-      - name: Remove every previous rendered output
-        run: |
-          rm -rf rendered
-          mkdir -p rendered
-
-      - name: Generate 200 new synthetic passages and answers
+      - name: Verify exact Reading-200 dataset from previous benchmark
         shell: bash
         run: |
-          SEED=$((GITHUB_RUN_ID % 2147483647))
-          echo "Synthetic dataset seed: ${SEED}"
-          python scripts/generate_reading_dataset.py \
-            --count 200 \
-            --seed "${SEED}" \
-            --output dataset/reading_200.jsonl \
-            --metadata-output dataset/reading_200.metadata.json
-
-      - name: Validate generated reading dataset
-        run: |
+          echo "987988ff39e3ed843ec1b6bb0b6287415c4cbfea83edf6ca4c60a7a25b6f1aef  dataset/reading_200.jsonl" | sha256sum -c -
           python scripts/validate_reading_dataset.py \
             dataset/reading_200.jsonl \
             --metadata dataset/reading_200.metadata.json \
@@ -64,76 +48,145 @@ jobs:
       - name: Fetch benchmark fonts
         run: python scripts/fetch_fonts.py
 
-      - name: Render six candidate fonts plus JetBrains Mono control
+      - name: Remove all previous rendered output
         run: |
-          python scripts/render_reading_matrix.py \
-            --tasks dataset/reading_200.jsonl \
-            --fonts "fira-sans,atkinson-hyperlegible,ibm-plex-sans,source-sans-3,inter,noto-sans,jetbrains-mono" \
-            --size 8 \
-            --margin 1 \
-            --line-gap 1 \
-            --patch-multiplier 1.2 \
-            --output rendered/reading-200
+          rm -rf rendered
+          mkdir -p rendered/reading-200
 
-      - name: Verify committed corpus shape
+      - name: Render Fira Sans at 8, 9, 10, 11 and 12 px
         run: |
           python - <<'PY'
+          from __future__ import annotations
+
+          from dataclasses import asdict
           import json
           from pathlib import Path
 
-          root = Path("rendered/reading-200")
-          manifest = [json.loads(line) for line in (root / "manifest.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
-          pngs = list(root.rglob("*.png"))
-          fonts = sorted({row["font_id"] for row in manifest})
-          tasks = sorted({row["task_id"] for row in manifest})
-          expected_fonts = sorted([
-              "fira-sans",
-              "atkinson-hyperlegible",
-              "ibm-plex-sans",
-              "source-sans-3",
-              "inter",
-              "noto-sans",
-              "jetbrains-mono",
-          ])
+          from vce.dataset import load_tasks
+          from vce.fonts import installed_fonts
+          from vce.render import RenderConfig, render_instruction
 
-          print(f"manifest rows={len(manifest)} pngs={len(pngs)} tasks={len(tasks)} fonts={fonts}")
+          tasks_path = Path("dataset/reading_200.jsonl")
+          out_root = Path("rendered/reading-200")
+          sizes = [8, 9, 10, 11, 12]
+          font_id = "fira-sans"
+
+          tasks = load_tasks(tasks_path)
           if len(tasks) != 200:
-              raise SystemExit(f"expected 200 tasks, got {len(tasks)}")
-          if fonts != expected_fonts:
-              raise SystemExit(f"font set mismatch: {fonts}")
-          if len(manifest) != 1400 or len(pngs) != 1400:
-              raise SystemExit("expected exactly 1,400 rendered images")
-          if sum(1 for row in manifest if row.get("is_control")) != 200:
-              raise SystemExit("expected exactly 200 control observations")
+              raise SystemExit(f"expected exactly 200 tasks, found {len(tasks)}")
+
+          fonts = installed_fonts()
+          if font_id not in fonts:
+              raise SystemExit("Fira Sans was not installed")
+
+          records = []
+          for size in sizes:
+              cfg = RenderConfig(
+                  font_id=font_id,
+                  font_size_px=size,
+                  line_gap_px=1,
+                  margin_px=1,
+                  max_aspect_ratio=None,
+                  patch_token_multiplier=1.2,
+              )
+              for task in tasks:
+                  path = out_root / font_id / f"{size}px" / f"{task.task_id}.png"
+                  result = render_instruction(task.instruction, path, cfg)
+                  records.append({
+                      "task_id": task.task_id,
+                      "category": task.category,
+                      "question": task.payload,
+                      "expected": task.expected,
+                      "scorer": task.scorer,
+                      "font_id": font_id,
+                      "font_family": fonts[font_id].get("family"),
+                      "is_control": False,
+                      "font_size_px": size,
+                      "margin_px": 1,
+                      "line_gap_px": 1,
+                      "width": result.width,
+                      "height": result.height,
+                      "patch_columns": result.patch_columns,
+                      "patch_rows": result.patch_rows,
+                      "patches": result.patches,
+                      "estimated_image_tokens": result.estimated_image_tokens,
+                      "line_height_px": result.line_height_px,
+                      "line_count": result.line_count,
+                      "font_sha256": result.font_sha256,
+                      "image_sha256": result.image_sha256,
+                      "path": result.path,
+                      "render_config": asdict(cfg),
+                  })
+
+          manifest = out_root / "manifest.jsonl"
+          with manifest.open("w", encoding="utf-8") as f:
+              for row in records:
+                  f.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
+
+          by_size = {}
+          for size in sizes:
+              subset = [r for r in records if r["font_size_px"] == size]
+              by_size[str(size)] = {
+                  "images": len(subset),
+                  "mean_patches": sum(r["patches"] for r in subset) / len(subset),
+                  "mean_estimated_image_tokens": sum(r["estimated_image_tokens"] for r in subset) / len(subset),
+              }
+
+          summary = {
+              "schema_version": 2,
+              "tasks": len(tasks),
+              "font": font_id,
+              "font_sizes_px": sizes,
+              "images": len(records),
+              "patch_token_multiplier": 1.2,
+              "by_size": by_size,
+          }
+          (out_root / "summary.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+
+          pngs = list(out_root.rglob("*.png"))
+          observation_ids = {(r["task_id"], r["font_size_px"]) for r in records}
+          if len(records) != 1000 or len(pngs) != 1000 or len(observation_ids) != 1000:
+              raise SystemExit(
+                  f"expected 1,000 unique renders; records={len(records)} pngs={len(pngs)} unique={len(observation_ids)}"
+              )
+          for size in sizes:
+              count = sum(1 for r in records if r["font_size_px"] == size)
+              if count != 200:
+                  raise SystemExit(f"expected 200 renders at {size}px, found {count}")
+
+          print("Rendered 1,000 images: 200 tasks × Fira Sans × 5 sizes")
+          for size in sizes:
+              print(size, by_size[str(size)])
           PY
 
-      - name: Commit generated dataset and all rendered output
+      - name: Verify dataset remained unchanged
+        run: |
+          echo "987988ff39e3ed843ec1b6bb0b6287415c4cbfea83edf6ca4c60a7a25b6f1aef  dataset/reading_200.jsonl" | sha256sum -c -
+          test "$(find rendered/reading-200 -type f -name '*.png' | wc -l)" -eq 1000
+
+      - name: Commit replacement rendered corpus only
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Stage deletions/changes to any previously tracked renders without
-          # asking Git to add newly generated ignored files yet.
           git add -u -- rendered
-          # rendered/ is intentionally ignored, so force-add the new corpus.
           git add -f rendered/reading-200
-          git add dataset/reading_200.jsonl dataset/reading_200.metadata.json
 
           if git diff --cached --quiet; then
-            echo "No generated changes to commit."
+            echo "No rendered changes to commit."
           else
-            git commit -m "data: replace renders with synthetic reading corpus"
+            git commit -m "data: replace renders with Fira Sans size sweep"
             git push origin HEAD:main
           fi
 
-      - name: Upload generated corpus as temporary artifact
+      - name: Upload rendered corpus as temporary artifact
         uses: actions/upload-artifact@v4
         with:
-          name: reading-200-rendered-${{ github.run_id }}
-          path: |
-            dataset/reading_200.jsonl
-            dataset/reading_200.metadata.json
-            rendered/reading-200/
+          name: reading-200-fira-size-sweep-${{ github.run_id }}
+          path: rendered/reading-200/
           if-no-files-found: error
           compression-level: 6
           retention-days: 7
