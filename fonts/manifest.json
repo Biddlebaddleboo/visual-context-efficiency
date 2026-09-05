@@ -35,6 +35,20 @@
       "filename": "FiraSans-Regular.ttf",
       "license": "OFL-1.1",
       "source": "https://raw.githubusercontent.com/mozilla/Fira/master/ttf/FiraSans-Regular.ttf"
+    },
+    {
+      "id": "inter",
+      "family": "Inter",
+      "filename": "Inter-Variable.ttf",
+      "license": "OFL-1.1",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf"
+    },
+    {
+      "id": "noto-sans",
+      "family": "Noto Sans",
+      "filename": "NotoSans-Variable.ttf",
+      "license": "OFL-1.1",
+      "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/NotoSans%5Bwdth%2Cwght%5D.ttf"
     }
   ]
 }
