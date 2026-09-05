@@ -1,0 +1,17 @@
+{
+  "codex_version": "codex-cli 0.152.1",
+  "concurrency": 4,
+  "corpus_observations": 1400,
+  "created_or_resumed_at": "2026-09-05T04:51:23.608349+00:00",
+  "dry_run": false,
+  "infra_retries": 1,
+  "manifest": "rendered/reading-200/manifest.jsonl",
+  "manifest_sha256": "bf99a395829bd3bdcd6448a46b4f99adf481efa23e7a1d2a172eee2d9302da04",
+  "model": "gpt-5.6-luna",
+  "prompt_template": "Read the passage in the attached image and answer the question below. Return only the answer, with no explanation.\n\nQuestion:\n{payload}",
+  "prompt_template_sha256": "d48ec730df5530e32f1eb5b52f259af4935db4e3c42c00ff395c2b17239c9af1",
+  "run_id": "rendered-corpus-20260905T045123Z-20ada5a7",
+  "tasks": "dataset/reading_200.jsonl",
+  "tasks_sha256": "987988ff39e3ed843ec1b6bb0b6287415c4cbfea83edf6ca4c60a7a25b6f1aef",
+  "timeout_seconds": 180
+}
