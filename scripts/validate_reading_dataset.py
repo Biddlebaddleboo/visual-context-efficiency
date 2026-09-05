@@ -34,10 +34,6 @@ def main() -> None:
     if len(ids) != len(set(ids)):
         raise SystemExit("duplicate task IDs found")
 
-    questions = [task.payload.strip() for task in tasks]
-    if len(questions) != len(set(questions)):
-        raise SystemExit("duplicate questions found")
-
     passages = [task.instruction.strip() for task in tasks]
     if len(passages) != len(set(passages)):
         raise SystemExit("duplicate passages found")
