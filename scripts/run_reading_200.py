@@ -18,6 +18,29 @@ PROMPT_TEMPLATE = (
 )
 
 
+def ensure_dataset(tasks_path: Path) -> None:
+    if tasks_path.exists():
+        try:
+            if len(load_tasks(tasks_path)) == 200:
+                return
+        except Exception:
+            pass
+    print(f"generating deterministic 200-task reading dataset at {tasks_path}", flush=True)
+    command = [
+        sys.executable,
+        "scripts/generate_reading_dataset.py",
+        "--count",
+        "200",
+        "--seed",
+        "20260905",
+        "--output",
+        str(tasks_path),
+    ]
+    result = subprocess.run(command)
+    if result.returncode != 0:
+        raise SystemExit(result.returncode)
+
+
 def render_passages(tasks_path: Path, font: str, size: int, output_root: Path) -> Path:
     tasks = load_tasks(tasks_path)
     out_dir = output_root / font / f"{size}px"
@@ -88,12 +111,8 @@ def main() -> None:
         raise SystemExit("--size must be positive")
     if args.concurrency < 1:
         raise SystemExit("--concurrency must be at least 1")
-    if not args.tasks.exists():
-        raise SystemExit(
-            f"reading dataset not found: {args.tasks}. Generate it with: "
-            "python3 scripts/generate_reading_dataset.py"
-        )
 
+    ensure_dataset(args.tasks)
     tasks = load_tasks(args.tasks)
     if len(tasks) != 200:
         raise SystemExit(f"expected exactly 200 reading tasks, found {len(tasks)}")
