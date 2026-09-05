@@ -1,0 +1,130 @@
+name: TEMP generate reading corpus and commit renders
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/temp-generate-reading-corpus.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  generate-and-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install project
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Remove every previous rendered output
+        run: |
+          rm -rf rendered
+          mkdir -p rendered
+
+      - name: Generate 200 new synthetic passages and answers
+        shell: bash
+        run: |
+          SEED=$((GITHUB_RUN_ID % 2147483647))
+          echo "Synthetic dataset seed: ${SEED}"
+          python scripts/generate_reading_dataset.py \
+            --count 200 \
+            --seed "${SEED}" \
+            --output dataset/reading_200.jsonl \
+            --metadata-output dataset/reading_200.metadata.json
+
+      - name: Validate generated reading dataset
+        run: |
+          python scripts/validate_reading_dataset.py \
+            dataset/reading_200.jsonl \
+            --metadata dataset/reading_200.metadata.json \
+            --expected-count 200
+
+      - name: Fetch benchmark fonts
+        run: python scripts/fetch_fonts.py
+
+      - name: Render six candidate fonts plus JetBrains Mono control
+        run: |
+          python scripts/render_reading_matrix.py \
+            --tasks dataset/reading_200.jsonl \
+            --fonts "fira-sans,atkinson-hyperlegible,ibm-plex-sans,source-sans-3,inter,noto-sans,jetbrains-mono" \
+            --size 8 \
+            --margin 1 \
+            --line-gap 1 \
+            --patch-multiplier 1.2 \
+            --output rendered/reading-200
+
+      - name: Verify committed corpus shape
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("rendered/reading-200")
+          manifest = [json.loads(line) for line in (root / "manifest.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+          pngs = list(root.rglob("*.png"))
+          fonts = sorted({row["font_id"] for row in manifest})
+          tasks = sorted({row["task_id"] for row in manifest})
+          expected_fonts = sorted([
+              "fira-sans",
+              "atkinson-hyperlegible",
+              "ibm-plex-sans",
+              "source-sans-3",
+              "inter",
+              "noto-sans",
+              "jetbrains-mono",
+          ])
+
+          print(f"manifest rows={len(manifest)} pngs={len(pngs)} tasks={len(tasks)} fonts={fonts}")
+          if len(tasks) != 200:
+              raise SystemExit(f"expected 200 tasks, got {len(tasks)}")
+          if fonts != expected_fonts:
+              raise SystemExit(f"font set mismatch: {fonts}")
+          if len(manifest) != 1400 or len(pngs) != 1400:
+              raise SystemExit("expected exactly 1,400 rendered images")
+          if sum(1 for row in manifest if row.get("is_control")) != 200:
+              raise SystemExit("expected exactly 200 control observations")
+          PY
+
+      - name: Commit generated dataset and all rendered output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Record deletion of every old render, then force-add the new generated corpus.
+          git add -A rendered
+          git add -f rendered/reading-200
+          git add dataset/reading_200.jsonl dataset/reading_200.metadata.json
+
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+          else
+            git commit -m "data: replace renders with synthetic reading corpus"
+            git push origin HEAD:main
+          fi
+
+      - name: Upload generated corpus as temporary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reading-200-rendered-${{ github.run_id }}
+          path: |
+            dataset/reading_200.jsonl
+            dataset/reading_200.metadata.json
+            rendered/reading-200/
+          if-no-files-found: error
+          compression-level: 6
+          retention-days: 7
