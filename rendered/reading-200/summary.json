@@ -1,0 +1,26 @@
+{
+  "candidate_fonts": [
+    "fira-sans",
+    "atkinson-hyperlegible",
+    "ibm-plex-sans",
+    "source-sans-3",
+    "inter",
+    "noto-sans"
+  ],
+  "control_font": "jetbrains-mono",
+  "font_size_px": 8,
+  "fonts": [
+    "fira-sans",
+    "atkinson-hyperlegible",
+    "ibm-plex-sans",
+    "source-sans-3",
+    "inter",
+    "noto-sans",
+    "jetbrains-mono"
+  ],
+  "images": 1400,
+  "mean_estimated_image_tokens": 39.94714285714286,
+  "mean_patches": 33.28928571428571,
+  "schema_version": 1,
+  "tasks": 200
+}

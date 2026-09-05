@@ -1,0 +1,18 @@
+{
+  "categories": {
+    "cause": 40,
+    "date": 40,
+    "fact": 40,
+    "location": 40,
+    "quantity": 40
+  },
+  "count": 200,
+  "generated_at_utc": "2026-09-05T03:34:47.951119+00:00",
+  "passage_words": {
+    "max": 141,
+    "mean": 129.14,
+    "min": 118
+  },
+  "schema_version": 1,
+  "seed": 1729984002
+}
