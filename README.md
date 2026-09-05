@@ -87,6 +87,49 @@ python scripts/run_matrix.py configs/smoke.json
 
 The broader first-pass matrix is in `configs/screening.json`.
 
+## Full pre-rendered corpus benchmark
+
+When `rendered/all-instructions/` contains the committed image matrix, use `scripts/run_rendered_corpus.py` to test the fixed PNG corpus directly. The script does **not** regenerate instruction images during the scored run. It verifies every PNG against the SHA-256 recorded in `manifest.jsonl`, then sends each image to an independent fresh Codex child.
+
+Validate the complete corpus without making model calls:
+
+```bash
+python scripts/run_rendered_corpus.py --dry-run
+```
+
+Run a small paid smoke test first:
+
+```bash
+python scripts/run_rendered_corpus.py --limit 8 --concurrency 2
+```
+
+Run the complete 1,600-image corpus:
+
+```bash
+python scripts/run_rendered_corpus.py --concurrency 4
+```
+
+If a long run is interrupted, resume its existing run directory rather than repeating completed observations:
+
+```bash
+python scripts/run_rendered_corpus.py --resume runs/<run-id> --concurrency 4
+```
+
+Each complete corpus run writes:
+
+```text
+runs/<run-id>/
+  run.json          experiment metadata and hashes
+  results.jsonl     rich raw observation + Codex event evidence
+  results.csv       flattened row-per-image analysis dataset
+  summary.json      machine-readable aggregate summary
+  REPORT.md         detailed human-readable benchmark report
+```
+
+The detailed report includes overall accuracy with Wilson 95% confidence intervals, coding versus non-coding results, category/font/size/font×size tables, patch and estimated image-token efficiency, an empirical accuracy/token Pareto frontier, per-task robustness, deterministic model failures, and infrastructure failures.
+
+A ready-to-paste parent Codex coordinator prompt is provided in [`PROMPT_RUN_FULL_BENCHMARK.md`](PROMPT_RUN_FULL_BENCHMARK.md).
+
 ## Fonts
 
 The initial font set is deliberately open-source:
@@ -123,13 +166,13 @@ The renderer is deterministic for a given source instruction and configuration. 
 - total patch count; and
 - estimated image tokens using the configured patch multiplier.
 
-The default renderer searches widths and chooses the lowest-patch layout subject to a practical aspect-ratio constraint. Aspect ratio is itself configurable for later experiments.
+The full-corpus renderer searches the configured layout space and ranks layouts lexicographically by minimum patch count, closeness to square, and then raw pixel area.
 
 ## Benchmark data
 
-`dataset/tasks.jsonl` contains a small seed dataset for harness validation. It covers semantic selection, negation, conditional rules, multi-step instructions, JSON output, null behavior, date comparison, formatting, reference resolution, and an exact-character OCR control.
+`dataset/tasks.jsonl` contains 40 benchmark tasks, currently balanced between light coding and non-coding instruction-following workloads. Coding tasks remain deliberately small so the benchmark measures visual instruction understanding rather than repository-scale software engineering.
 
-The planned validation set is substantially larger; see [`BENCHMARK_TASKS.md`](BENCHMARK_TASKS.md).
+See [`BENCHMARK_TASKS.md`](BENCHMARK_TASKS.md) for task-design guidance.
 
 ## Results
 
@@ -143,11 +186,13 @@ results.jsonl       # raw observation records + scores
 
 Infrastructure failures are separated from model failures. Valid model responses are never silently retried just because they score poorly.
 
-Summarize a run with:
+Summarize a legacy/single-configuration run with:
 
 ```bash
 vce-report runs/<run-id>/results.jsonl
 ```
+
+For the committed 1,600-image corpus, prefer `scripts/run_rendered_corpus.py`, which generates CSV and the richer report automatically.
 
 ## Repository documents
 
@@ -157,6 +202,7 @@ vce-report runs/<run-id>/results.jsonl
 - [`BENCHMARK_TASKS.md`](BENCHMARK_TASKS.md) — task taxonomy and dataset requirements.
 - [`RESEARCH_LOG.md`](RESEARCH_LOG.md) — contemporaneous research notebook.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution and reproducibility expectations.
+- [`PROMPT_RUN_FULL_BENCHMARK.md`](PROMPT_RUN_FULL_BENCHMARK.md) — ready-to-use parent Codex prompt for the complete fixed-corpus run.
 
 ## Public-repo boundary
 
@@ -164,4 +210,4 @@ Use synthetic or clearly redistributable benchmark content. Do not commit API ke
 
 ## Status
 
-The initial Python harness, deterministic renderer, font fetcher, fresh Codex CLI child runner, seed dataset, scorers, matrix driver, and report utility are implemented. The current seed tasks are for harness validation, not a final empirical benchmark result.
+The repository now includes the deterministic renderer, fixed rendered-corpus workflow, fresh Codex child runner, 40-task dataset, scorers, matrix tooling, resumable 1,600-image corpus runner, CSV export, and detailed report generation. No empirical benchmark conclusion should be treated as established until the complete versioned experiment has actually been run and reviewed.
