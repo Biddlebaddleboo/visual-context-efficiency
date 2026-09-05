@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import random
@@ -50,7 +51,7 @@ def build_rows(count: int = DEFAULT_COUNT, seed: int = DEFAULT_SEED) -> list[dic
     for i in range(count):
         kind = TYPES[i % len(TYPES)]
         subject = rng.choice(NAMES)
-        sentences = [filler_sentence(rng) for _ in range(5)]
+        sentences = [filler_sentence(rng) for _ in range(7)]
 
         if kind == "fact":
             answer = rng.choice(COLORS)
@@ -90,9 +91,6 @@ def build_rows(count: int = DEFAULT_COUNT, seed: int = DEFAULT_SEED) -> list[dic
             question = f"Where was the signed copy assigned to {subject} stored?"
 
         sentences.insert(rng.randint(1, len(sentences) - 1), target)
-        sentences.append(filler_sentence(rng))
-        sentences.append(filler_sentence(rng))
-
         rows.append({
             "task_id": f"reading_{i + 1:03d}",
             "category": f"reading_{kind}",
@@ -107,10 +105,11 @@ def build_rows(count: int = DEFAULT_COUNT, seed: int = DEFAULT_SEED) -> list[dic
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate the deterministic 200-passage reading-comprehension benchmark.")
+    parser = argparse.ArgumentParser(description="Generate a synthetic reading-comprehension benchmark.")
     parser.add_argument("--count", type=int, default=DEFAULT_COUNT)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--output", type=Path, default=Path("dataset/reading_200.jsonl"))
+    parser.add_argument("--metadata-output", type=Path, default=Path("dataset/reading_200.metadata.json"))
     args = parser.parse_args()
     if args.count < 1:
         raise SystemExit("--count must be positive")
@@ -122,9 +121,25 @@ def main() -> None:
             f.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
 
     words = [len(row["instruction"].split()) for row in rows]
+    metadata = {
+        "schema_version": 1,
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "seed": args.seed,
+        "count": len(rows),
+        "categories": {kind: sum(1 for row in rows if row["category"] == f"reading_{kind}") for kind in TYPES},
+        "passage_words": {
+            "min": min(words),
+            "mean": sum(words) / len(words),
+            "max": max(words),
+        },
+    }
+    args.metadata_output.parent.mkdir(parents=True, exist_ok=True)
+    args.metadata_output.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
     print(f"wrote {len(rows)} tasks to {args.output}")
     print(f"passage words: min={min(words)} mean={sum(words)/len(words):.1f} max={max(words)}")
     print(f"seed={args.seed}")
+    print(f"metadata={args.metadata_output}")
 
 
 if __name__ == "__main__":
